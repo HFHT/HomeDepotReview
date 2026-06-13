@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#005596" />
+  <meta name="description" content="Habitat for Humanity — internal application portal." />
+  <title>Habitat for Humanity</title>
+  
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <!--
+      Inline critical styles for the environment-check fallback screen.
+      Kept inline so they render even if the SPA bundle never loads.
+    -->
+  <style>
+    :root {
+      --hfh-blue: #005596;
+      --hfh-green: #6cb33f;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #f5f6f8;
+      color: #1a1b1e;
+    }
+
+    #unsupported {
+      display: none;
+      max-width: 640px;
+      margin: 10vh auto;
+      padding: 2rem;
+      background: #fff;
+      border-top: 6px solid var(--hfh-blue);
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
+
+    #unsupported h1 {
+      color: var(--hfh-blue);
+      font-size: 1.5rem;
+    }
+
+    #unsupported ul {
+      display: inline-block;
+      text-align: left;
+      color: #495057;
+    }
+
+    #app-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: var(--hfh-blue);
+      font-size: 1.1rem;
+    }
+  </style>
+
+  <!--
+      Environment guard.
+      Runs synchronously BEFORE the module bundle is requested so that
+      unsupported browsers never attempt to execute modern syntax.
+    -->
+  <script>
+    /**
+     * Validates that the runtime supports every browser API the
+     * application framework (React + Mantine + Zustand + MSAL) depends on.
+     *
+     * @returns {string[]} A list of human-readable missing-feature labels.
+     *                     An empty array indicates a fully supported environment.
+     */
+    function getMissingFeatures() {
+      var missing = [];
+
+      // MSAL requires a secure context (HTTPS or localhost) for token handling.
+      if (!window.isSecureContext) {
+        missing.push("A secure (HTTPS) connection");
+      }
+
+      // MSAL uses the Web Crypto API for PKCE and token validation.
+      if (!window.crypto || !window.crypto.subtle) {
+        missing.push("Web Crypto API (window.crypto.subtle)");
+      }
+
+      // Token / state persistence.
+      try {
+        var testKey = "__hfh_env_test__";
+        window.localStorage.setItem(testKey, "1");
+        window.localStorage.removeItem(testKey);
+      } catch (e) {
+        missing.push("Local Storage");
+      }
+
+      // Network requests to the back-end API layer.
+      if (typeof window.fetch !== "function") {
+        missing.push("Fetch API");
+      }
+
+      // Promises power async auth + data flows.
+      if (typeof window.Promise !== "function") {
+        missing.push("Promises (ES2015)");
+      }
+
+      // ES module support — the bundle is shipped as type="module".
+      // Browsers that lack module support silently ignore the script tag,
+      // so we detect it via feature inference on a known global.
+      if (typeof Symbol === "undefined") {
+        missing.push("Modern JavaScript (ES2015+)");
+      }
+
+      return missing;
+    }
+
+    var missingFeatures = getMissingFeatures();
+
+    if (missingFeatures.length > 0) {
+      // Defer DOM mutation until the body parses.
+      document.addEventListener("DOMContentLoaded", function () {
+        var loading = document.getElementById("app-loading");
+        if (loading) loading.style.display = "none";
+
+        var panel = document.getElementById("unsupported");
+        var list = document.getElementById("unsupported-list");
+        if (list) {
+          missingFeatures.forEach(function (feature) {
+            var li = document.createElement("li");
+            li.textContent = feature;
+            list.appendChild(li);
+          });
+        }
+        if (panel) panel.style.display = "block";
+      });
+
+      // Flag for the bundle so it can abort if it somehow still executes.
+      window.__HFH_ENV_UNSUPPORTED__ = true;
+    }
+  </script>
+</head>
+
+<body>
+  <!-- Fallback screen for unsupported browsers. -->
+  <div id="unsupported" role="alert">
+    <h1>Your browser isn't supported</h1>
+    <p>
+      The Habitat for Humanity portal requires a modern, secure browser. Your
+      current browser is missing:
+    </p>
+    <ul id="unsupported-list"></ul>
+    <p>
+      Please update to the latest version of Chrome, Edge, Firefox, or Safari,
+      and ensure you're connecting over <strong>https://</strong>.
+    </p>
+  </div>
+
+  <!-- React mount point. -->
+  <div id="root">
+    <div id="app-loading">Loading Habitat for Humanity…</div>
+  </div>
+
+  <!-- The SPA bundle. Only loaded if the environment guard passed. -->
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
