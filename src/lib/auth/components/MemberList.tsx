@@ -3,6 +3,7 @@ import { IconSearch } from "@tabler/icons-react";
 import { useAuthStore } from "../stores/authStore";
 import { useState } from "react";
 import { AzureADMember } from "../config/msalConfig";
+import { useNoMobileKeyboard } from "../../theme/hooks/useNoMobileKeyboard";
 
 /**
  * A searchable combobox component for selecting an Azure AD (Entra ID) organization member.
@@ -24,17 +25,19 @@ import { AzureADMember } from "../config/msalConfig";
  * @returns The rendered member selection combobox.
  */
 export function MemberList() {
+    const kbProps = useNoMobileKeyboard();
+
     /** Mantine combobox controller managing dropdown open/close state. */
     const combobox = useCombobox();
 
     /** Azure AD members retrieved from Microsoft Graph, sourced from the auth store. */
-    const { members } = useAuthStore();
+    const { members, selectedMember, setSelectedMember } = useAuthStore();
 
     /** Current free-text search query entered by the user. */
     const [memberSearch, setMemberSearch] = useState('');
 
     /** The currently selected Azure AD member, or `undefined` if none is selected. */
-    const [selectedMember, setSelectedMember] = useState<AzureADMember | undefined>(undefined);
+    // const [selectedMember, setSelectedMember] = useState<AzureADMember | undefined>(undefined);
 
     /**
      * Members filtered by the current search query.
@@ -67,7 +70,7 @@ export function MemberList() {
      * @returns void
      */
     const handleClear = () => {
-        setSelectedMember(undefined);
+        setSelectedMember(null);
         setMemberSearch('');
         combobox.closeDropdown();
     };
@@ -103,11 +106,12 @@ export function MemberList() {
                         value={displayValue}
                         onChange={(e) => {
                             setMemberSearch(e.currentTarget.value);
-                            setSelectedMember(undefined);
+                            setSelectedMember(null);
                             combobox.openDropdown();
                         }}
                         onClick={() => combobox.openDropdown()}
                         onFocus={() => combobox.openDropdown()}
+                        {...kbProps}
                     />
                 </Combobox.Target>
                 <Combobox.Dropdown>

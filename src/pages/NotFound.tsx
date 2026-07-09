@@ -1,5 +1,5 @@
-import { JSX } from "react/jsx-runtime";
+// import { JSX } from "react/jsx-runtime";
 
-export function NotFound(): JSX.Element {
-  return <div>Page Not Found</div>;
-}
+// export function NotFound(): JSX.Element {
+//   return <div>Page Not Found</div>;
+// }

@@ -1,0 +1,48 @@
+.wrapper {
+  height: 80vh; /* adjust to your layout, or pass down a height from parent */
+}
+
+.viewport {
+  height: 100%;
+}
+
+.slide {
+  height: 100%;
+}
+
+.control {
+  &[data-inactive] {
+    opacity: 0;
+    cursor: default;
+  }
+}
+
+/* --- Indicators --- */
+.indicators {
+  top: var(--mantine-spacing-md);
+  bottom: unset;
+}
+
+.indicator {
+  width: 40px;
+  height: 8px;
+  transition: width 250ms ease;
+}
+
+.indicator[data-active] {
+  background-color: var(--mantine-color-habitatBlue-4);
+}
+
+/* --- Controls (arrows) --- */
+.control {
+  background-color: var(--mantine-color-habitatBlue-4);
+  color: var(--mantine-color-white);
+  border: none;
+  opacity: 1;
+  box-shadow: var(--mantine-shadow-sm);
+}
+
+.control:hover {
+  background-color: var(--mantine-color-habitatBlue-7);
+  color: var(--mantine-color-white);
+}

@@ -6,8 +6,9 @@
 import type { ReactNode } from 'react';
 import { IconFileInvoice, IconCircleCheck, IconCircleX } from '@tabler/icons-react';
 import type { ReviewStatus } from '../services/receiptTypes';
-import { ReceiptListPage } from '../pages/ReceiptListPage';
-import { ReceiptReviewPage } from '../pages/ReceiptReviewPage';
+import { ReceiptListPage } from './ReceiptListPage';
+import { ReceiptReviewPage } from './ReceiptReviewPage';
+
 
 /** Navigation metadata for a route (shape mirrors the framework `NavMeta`). */
 interface NavMeta {

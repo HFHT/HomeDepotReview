@@ -63,3 +63,42 @@ export async function fetchMembers(token?: string): Promise<AzureADMember[]> {
     userPrincipalName: u.userPrincipalName,
   }));
 }
+
+/**
+ * Fetches the signed-in user's medium-resolution profile photo (96x96) from
+ * Microsoft Graph.
+ *
+ * @remarks
+ * Not every account has a photo configured in Azure AD. When Graph responds
+ * with `404 Not Found`, this function resolves to `null` rather than
+ * throwing, allowing callers to gracefully fall back to an initials-based
+ * avatar.
+ *
+ * @param token - Optional Microsoft Graph access token. When omitted, the
+ *   token is retrieved from the auth store's current state.
+ *
+ * @returns A promise that resolves to the photo as a `Blob`, or `null` when
+ *   the user has no photo.
+ *
+ * @throws {Error} If no access token is available.
+ * @throws {Error} If the Graph request fails with a non-2xx, non-404 status.
+ */
+export async function fetchUserPhoto(token?: string | null): Promise<Blob | null> {
+  const accessToken = token ?? useAuthStore.getState().accessToken;
+  if (!accessToken) throw new Error('No access token available');
+
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/photos/96x96/$value', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (res.status === 404) return null; // No photo configured for this user.
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Graph error ${res.status}: ${text}`);
+  }
+
+  return res.blob();
+}

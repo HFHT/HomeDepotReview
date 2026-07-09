@@ -24,9 +24,11 @@
     "dayjs": "^1.11.21",
     "embla-carousel": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "idb": "^8.0.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.17.0",
+    "react-zoom-pan-pinch": "^4.0.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

@@ -1,105 +1,10 @@
-// import { type ReactNode } from 'react';
-// import {
-//   AppShell
-// } from '@mantine/core';
-
-// import { DesktopNavigation, MobileNavigation } from './Navigation';
-// import { Header } from './Header';
-
-// /**
-//  * Props for the {@link AppLayout} component.
-//  *
-//  * @interface AppLayoutProps
-//  */
-// interface AppLayoutProps {
-//   /**
-//    * The page content rendered within the layout's main content area.
-//    */
-//   children: ReactNode;
-// }
-
-// /**
-//  * Top-level application shell that provides a responsive, mobile-first layout
-//  * for the Habitat for Humanity SPA.
-//  *
-//  * @remarks
-//  * This component wraps Mantine's {@link https://mantine.dev/core/app-shell/ | AppShell}
-//  * to deliver an adaptive navigation experience that changes based on viewport size:
-//  *
-//  * - **Mobile (below the `sm` breakpoint):** Navigation is presented as a fixed
-//  *   bottom button bar via {@link MobileNavigation}, rendered in the footer.
-//  *   The left-hand navbar is collapsed and hidden.
-//  * - **Desktop (`sm` breakpoint and above):** Navigation switches to a traditional
-//  *   260px-wide left sidebar via {@link DesktopNavigation}, while the bottom
-//  *   button bar is hidden.
-//  *
-//  * The {@link Header} is always visible at the top and styled with the Habitat for
-//  * Humanity brand gradient (deep blue `#00457c` to green `#76bc21`).
-//  *
-//  * The main content area reserves bottom padding equal to the footer height so that
-//  * content is never obscured by the mobile bottom navigation bar.
-//  *
-//  * @example
-//  * ```tsx
-//  * <AppLayout>
-//  *   <DashboardPage />
-//  * </AppLayout>
-//  * ```
-//  *
-//  * @param props - The component props.
-//  * @param props.children - The page content to display in the main region.
-//  * @returns The responsive application shell wrapping the provided content.
-//  */
-// export function AppLayout({ children }: AppLayoutProps) {
-
-//   return (
-
-//     <AppShell
-//       header={{ height: 60 }}
-//       navbar={{
-//         width: 150,
-//         breakpoint: 'sm',
-//         collapsed: { mobile: true, desktop: false }
-//       }}
-//       footer={{ height: 64, collapsed: false }}
-//       padding={{ base: 'xs', sm: 'md' }}
-//     >
-//       <AppShell.Header
-//         style={{
-//           background: 'linear-gradient(90deg, #00457c 0%, #76bc21 100%)',
-//           border: 'none'
-//         }}
-//       >
-//         <Header />
-//       </AppShell.Header>
-
-//       <AppShell.Navbar p="md" visibleFrom="sm">
-//         <DesktopNavigation />
-//       </AppShell.Navbar>
-
-//       <AppShell.Main
-//         style={{
-//           background: '#f8f9fa',
-//           paddingBottom: 'calc(64px + var(--app-shell-padding))'
-//         }}
-//       >{children}
-//       </AppShell.Main>
-//       {/* MOBILE BOTTOM NAV */}
-//       <AppShell.Footer
-//         hiddenFrom="sm"
-//         style={{
-//           background: 'white',
-//           borderTop: '1px solid #e9ecef'
-//         }}
-//       >
-//         <MobileNavigation />
-//       </AppShell.Footer>
-//     </AppShell>
-//   );
-// }
-
 import { type ReactNode } from 'react';
-import { AppShell, Group } from '@mantine/core';
+import {
+  AppShell,
+  Group,
+  LoadingOverlay
+} from '@mantine/core';
+import { useNetwork } from '@mantine/hooks';
 
 import { DesktopNavigation, MobileNavigation } from './Navigation';
 import { Header } from './Header';
@@ -111,6 +16,8 @@ export type NavPosition = 'left' | 'top';
 
 /**
  * Props for the {@link AppLayout} component.
+ *
+ * @interface AppLayoutProps
  */
 interface AppLayoutProps {
   /**
@@ -129,29 +36,80 @@ interface AppLayoutProps {
    *
    * @defaultValue 'left'
    */
-  position?: NavPosition;
+  navPosition?: NavPosition;
+
+  /**
+   * When `true` (the default), the main content area is covered by a
+   * {@link https://mantine.dev/core/loading-overlay/ | LoadingOverlay} and
+   * effectively "locked" whenever the browser reports that it is offline
+   * (per Mantine's {@link https://mantine.dev/hooks/use-network/ | use-network}
+   * hook).
+   *
+   * @remarks
+   * Set this to `false` to opt out of the automatic lock behavior, e.g. for
+   * pages that need to remain interactive while offline (such as pages that
+   * rely on local/cached state).
+   *
+   * @defaultValue true
+   */
+  disableOnNetworkOffline?: boolean;
 }
 
-const BRAND_GRADIENT = 'linear-gradient(90deg, #00457c 0%, #76bc21 100%)';
-
 /**
- * Top-level application shell providing a responsive, mobile-first layout.
+ * Top-level application shell that provides a responsive, mobile-first layout
+ * for the Habitat for Humanity SPA.
  *
  * @remarks
- * The desktop navigation can be placed on the left (sidebar) or across the top
- * (horizontal bar) via the {@link AppLayoutProps.position | position} prop.
+ * This component wraps Mantine's {@link https://mantine.dev/core/app-shell/ | AppShell}
+ * to deliver an adaptive navigation experience that changes based on viewport size:
+ *
+ * - **Mobile (below the `sm` breakpoint):** Navigation is presented as a fixed
+ *   bottom button bar via {@link MobileNavigation}, rendered in the footer.
+ *   The left-hand navbar is collapsed and hidden.
+ * - **Desktop (`sm` breakpoint and above):** Navigation switches to a traditional
+ *   260px-wide left sidebar via {@link DesktopNavigation}, while the bottom
+ *   button bar is hidden.
+ *
+ * The {@link Header} is always visible at the top and styled with the Habitat for
+ * Humanity brand gradient (deep blue `#00457c` to green `#76bc21`), and includes
+ * a network status badge that warns of offline/slow connectivity.
+ *
+ * The main content area reserves bottom padding equal to the footer height so that
+ * content is never obscured by the mobile bottom navigation bar. It is also
+ * network-aware: by default, if the browser goes offline, a
+ * {@link https://mantine.dev/core/loading-overlay/ | LoadingOverlay} is shown
+ * over the main content to "lock" the page and prevent user interaction until
+ * connectivity is restored. This can be disabled via `disableOnNetworkOffline`.
  *
  * @example
  * ```tsx
- * <AppLayout position="top">
+ * <AppLayout>
  *   <DashboardPage />
  * </AppLayout>
  * ```
+ *
+ * @example
+ * Opt out of the automatic offline lock behavior:
+ * ```tsx
+ * <AppLayout disableOnNetworkOffline={false}>
+ *   <DashboardPage />
+ * </AppLayout>
+ * ```
+ *
+ * @param props - The component props.
+ * @param props.children - The page content to display in the main region.
+ * @param props.disableOnNetworkOffline - Whether to lock the main content
+ * area with a loading overlay when the network is offline. Defaults to `true`.
+ * @returns The responsive application shell wrapping the provided content.
  */
-export function AppLayout({ children, position = 'left' }: AppLayoutProps) {
-  const isTop = position === 'top';
+export function AppLayout({ children, navPosition, disableOnNetworkOffline = true }: AppLayoutProps) {
+  const isTop = navPosition === 'top';
+  const { online } = useNetwork();
+
+  const isLocked = disableOnNetworkOffline && online === false;
 
   return (
+
     <AppShell
       // When the nav is on top, the header is taller on desktop to fit the
       // brand row (60) + nav row (50). Mobile stays at 60 since the nav row is
@@ -162,20 +120,21 @@ export function AppLayout({ children, position = 'left' }: AppLayoutProps) {
         isTop
           ? undefined
           : {
-              width: 150,
-              breakpoint: 'sm',
-              collapsed: { mobile: true, desktop: false },
-            }
+            width: 260,
+            breakpoint: 'sm',
+            collapsed: { mobile: true, desktop: false },
+          }
       }
       footer={{ height: 64, collapsed: false }}
       padding={{ base: 'xs', sm: 'md' }}
     >
-      <AppShell.Header style={{ border: 'none' }}>
-        {/* Brand row (always 60px tall, gradient background) */}
-        <div style={{ height: 60, background: BRAND_GRADIENT }}>
-          <Header />
-        </div>
-
+      <AppShell.Header
+        style={{
+          background: 'linear-gradient(90deg, #00457c 0%, #76bc21 100%)',
+          border: 'none'
+        }}
+      >
+        <Header />
         {/* Horizontal nav row — desktop only, top layout only */}
         {isTop && (
           <Group
@@ -204,18 +163,24 @@ export function AppLayout({ children, position = 'left' }: AppLayoutProps) {
       <AppShell.Main
         style={{
           background: '#f8f9fa',
-          paddingBottom: 'calc(64px + var(--app-shell-padding))',
+          paddingBottom: 'calc(64px + var(--app-shell-padding))'
         }}
       >
-        {children}
+        <div style={{ position: 'relative' }}>
+          <LoadingOverlay
+            visible={isLocked}
+            zIndex={1000}
+            overlayProps={{ radius: 'sm', blur: 2 }}
+          />
+          {children}
+        </div>
       </AppShell.Main>
-
       {/* MOBILE BOTTOM NAV */}
       <AppShell.Footer
         hiddenFrom="sm"
         style={{
           background: 'white',
-          borderTop: '1px solid #e9ecef',
+          borderTop: '1px solid #e9ecef'
         }}
       >
         <MobileNavigation />

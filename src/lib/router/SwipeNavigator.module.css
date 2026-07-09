@@ -1,0 +1,48 @@
+.viewport {
+  position: relative;
+  width: 100%;
+  /* `clip` (not `hidden`) hides the off-screen pages WITHOUT creating a
+     scroll container, so position: sticky still anchors to AppShell.Main.
+     `hidden` would force overflow-y to `auto`, breaking sticky. */
+  overflow-x: clip;
+  /* Let the browser own vertical scrolling; we handle horizontal swipes. */
+  touch-action: pan-y;
+}
+
+.page {
+  width: 100%;
+  will-change: transform;
+}
+
+.enterForward {
+  animation: swipeInFromRight 0.28s ease;
+}
+
+.enterBackward {
+  animation: swipeInFromLeft 0.28s ease;
+}
+
+@keyframes swipeInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes swipeInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enterForward,
+  .enterBackward {
+    animation: none;
+  }
+}

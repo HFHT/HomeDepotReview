@@ -1,56 +1,3 @@
-// /**
-//  * @file Resolves the AI → Field → Finance change chain for a single field,
-//  * used to drive source badges, tooltips, and "edited" markers.
-//  */
-// import type { AuditChange } from './receiptTypes';
-
-// /** Resolved change chain for a field, newest-winning layer flagged. */
-// export interface FieldChangeChain {
-//   /** Layer that produced the value now displayed. */
-//   currentLayer: AuditChange['layer'];
-//   /** Ordered AI → Field → Finance values (nulls preserved). */
-//   chain: { layer: AuditChange['layer']; value: string | null | undefined }[];
-//   /** True if any layer beyond AI altered the value (drives the `*` marker). */
-//   edited: boolean;
-// }
-
-// /**
-//  * Builds the display chain for a receipt or line-item field from the audit trail.
-//  *
-//  * @param audit - the receipt's full `auditTrail`.
-//  * @param fieldKey - the field to resolve (e.g. `"receiptTotal"`, `"unitPrice"`).
-//  * @param lineItemIndex - index for a line-item field; omit for header fields.
-//  * @returns The current layer, ordered value chain, and whether it was edited.
-//  * @example buildFieldChain(receipt.auditTrail, 'receiptTotal').currentLayer // 'Finance'
-//  */
-// export function buildFieldChain(
-//   audit: AuditChange[],
-//   fieldKey: string,
-//   lineItemIndex?: number,
-// ): FieldChangeChain {
-//   const order: AuditChange['layer'][] = ['AI', 'Field', 'Finance'];
-//   const relevant = audit.filter(
-//     (a) => a.fieldKey === fieldKey && a.lineItemIndex === lineItemIndex,
-//   );
-
-//   const chain = order.map((layer) => {
-//     const entry = relevant.find((a) => a.layer === layer);
-//     return {
-//       layer,
-//       value:
-//         layer === 'AI'
-//           ? entry?.originalValue
-//           : layer === 'Field'
-//             ? entry?.fieldValue
-//             : entry?.financeValue,
-//     };
-//   });
-
-//   const present = order.filter((l) => relevant.some((a) => a.layer === l));
-//   const currentLayer = present.length ? present[present.length - 1] : 'AI';
-
-//   return { currentLayer, chain, edited: currentLayer !== 'AI' };
-// }
 
 /**
  * @file Resolves the AI → Field → Finance change chain for a single field by
@@ -101,16 +48,18 @@ const HEADER_FIELD_KEY_TO_PROP: Record<string, keyof Receipt> = {
  * Reads the live value off the receipt for a given fieldKey so the AI value can
  * fall back to it when there are no audit entries.
  *
- * Line-item fieldKeys match their `LineItem` property names 1:1; header keys go
- * through {@link HEADER_FIELD_KEY_TO_PROP} (only `"store"` differs today).
+ * Line-item fieldKeys match their `LineItem` property names 1:1 and are located
+ * by `lineItemKey`; header keys go through {@link HEADER_FIELD_KEY_TO_PROP}.
  */
 function readReceiptValue(
   receipt: Receipt,
   fieldKey: string,
-  lineItemIndex?: number,
+  lineItemKey?: string,
 ): string | null {
-  if (lineItemIndex !== undefined) {
-    const li = receipt.lineItems[lineItemIndex] as Record<string, unknown> | undefined;
+  if (lineItemKey !== undefined) {
+    const li = receipt.lineItems.find((l) => l.lineItemKey === lineItemKey) as
+      | Record<string, unknown>
+      | undefined;
     const v = li?.[fieldKey];
     return v == null ? null : String(v);
   }
@@ -119,40 +68,6 @@ function readReceiptValue(
   const v = receipt[prop];
   return v == null ? null : String(v);
 }
-
-// /**
-//  * Reads the live value off the receipt for a given fieldKey so the AI value can
-//  * fall back to it when there are no audit entries.
-//  *
-//  * NOTE: this mapping is the one open question — see message below.
-//  */
-// function readReceiptValue(
-//   receipt: Receipt,
-//   fieldKey: string,
-//   lineItemIndex?: number,
-// ): string | null {
-//   if (lineItemIndex !== undefined) {
-//     const li = receipt.lineItems[lineItemIndex] as Record<string, unknown> | undefined;
-//     const v = li?.[fieldKey];
-//     return v == null ? null : String(v);
-//   }
-
-//   const map: Record<string, unknown> = {
-//     store: receipt.storeNumber,
-//     storeNumber: receipt.storeNumber,
-//     receiptNumber: receipt.receiptNumber,
-//     receiptDate: receipt.receiptDate,
-//     receiptPO: receipt.receiptPO,
-//     receiptSubtotal: receipt.receiptSubtotal,
-//     receiptTax: receipt.receiptTax,
-//     receiptDiscount: receipt.receiptDiscount,
-//     receiptTotal: receipt.receiptTotal,
-//     receiptBalanceDue: receipt.receiptBalanceDue,
-//   };
-
-//   const v = map[fieldKey];
-//   return v == null ? null : String(v);
-// }
 
 /** Most recent (by changedAt) changedValue for a layer, or null if absent. */
 function latestValueForLayer(
@@ -168,15 +83,15 @@ function latestValueForLayer(
  *
  * @param receipt - the full receipt.
  * @param fieldKey - the field to resolve (e.g. `"receiptTotal"`, `"unitPrice"`).
- * @param lineItemIndex - index for a line-item field; omit for header fields.
+ * @param lineItemKey - stable key for a line-item field; omit for header fields.
  */
 export function resolveFieldChain(
   receipt: Receipt,
   fieldKey: string,
-  lineItemIndex?: number,
+  lineItemKey?: string,
 ): ResolvedFieldChain {
   const relevant = receipt.auditTrail
-    .filter((a) => a.fieldKey === fieldKey && a.lineItemIndex === lineItemIndex)
+    .filter((a) => a.fieldKey === fieldKey && a.lineItemKey === lineItemKey)
     .slice()
     .sort((a, b) => Date.parse(a.changedAt) - Date.parse(b.changedAt));
 
@@ -186,7 +101,7 @@ export function resolveFieldChain(
   // AI value: earliest entry's originalValue, else the live receipt value.
   const aiValue = relevant.length
     ? relevant[0].originalValue
-    : readReceiptValue(receipt, fieldKey, lineItemIndex);
+    : readReceiptValue(receipt, fieldKey, lineItemKey);
 
   const fieldValue = hasField ? latestValueForLayer(relevant, 'Field') : null;
   const financeValue = hasFinance ? latestValueForLayer(relevant, 'Finance') : null;
@@ -206,8 +121,8 @@ export function resolveFieldChain(
 export function getFieldChainValues(
   receipt: Receipt,
   fieldKey: string,
-  lineItemIndex?: number,
+  lineItemKey?: string,
 ): FieldChainValues {
-  const { aiValue, fieldValue, financeValue } = resolveFieldChain(receipt, fieldKey, lineItemIndex);
+  const { aiValue, fieldValue, financeValue } = resolveFieldChain(receipt, fieldKey, lineItemKey);
   return { aiValue, fieldValue, financeValue };
 }
