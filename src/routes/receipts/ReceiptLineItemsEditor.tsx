@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ActionIcon, Button, Card, Group, NumberInput, Table, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, Card, Group, NumberInput, Table, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 
 import type { ReceiptAnalysisResponseItems } from '../../types/ReceiptAnalysis';
@@ -29,6 +29,17 @@ export function ReceiptLineItemsEditor({ original }: ReceiptLineItemsEditorProps
   const form = useReceiptFormContext();
   const items = form.values.receipt.line_items;
   const history = form.values.history;
+
+
+  // Define column widths
+  const columnWidths = [
+    '19%', // SKU/UPC
+    '38%', // Title
+    '10%', // Qty
+    '15%', // Unit Price
+    '15%', // Discount
+    '17%', // Total
+  ];
 
   const originalById = useMemo(() => {
     const map = new Map<string, ReceiptAnalysisResponseItems>();
@@ -73,14 +84,20 @@ export function ReceiptLineItemsEditor({ original }: ReceiptLineItemsEditorProps
       </Group>
 
       <Table striped highlightOnHover verticalSpacing="xs">
+        <colgroup>
+          {columnWidths.map((width, index) => (
+            <col key={index} style={{ width }} />
+          ))}
+          {<col style={{ width: '5%' }} />}
+        </colgroup>
         <Table.Thead>
           <Table.Tr>
+            <Table.Th >SKU / UPC</Table.Th>
             <Table.Th>Title</Table.Th>
-            <Table.Th w={110}>Quantity</Table.Th>
-            <Table.Th w={130}>Unit Price</Table.Th>
-            <Table.Th w={130}>Total Price</Table.Th>
-            <Table.Th w={140}>SKU / UPC</Table.Th>
-            <Table.Th w={40} />
+            <Table.Th >Quantity</Table.Th>
+            <Table.Th >Unit Price</Table.Th>
+            <Table.Th >Total Price</Table.Th>
+            <Table.Th />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -100,7 +117,31 @@ export function ReceiptLineItemsEditor({ original }: ReceiptLineItemsEditorProps
                   <Table.Td>
                     <Group gap={4} wrap="nowrap">
                       <TextInput
+                        value={item.sku_or_upc ?? ''}
+                        onChange={(e) =>
+                          form.setFieldValue(`receipt.line_items.${index}.sku_or_upc`, e.currentTarget.value || null)
+                        }
+                        onBlur={(e) =>
+                          track(item.id, 'sku_or_upc', orig?.sku_or_upc ?? null, e.currentTarget.value || null)
+                        }
+                      />
+                      <FieldSourceIndicator
+                        variant="asterisk"
+                        history={history}
+                        field="sku_or_upc"
+                        lineItemId={item.id}
+                        aiValue={orig?.sku_or_upc ?? null}
+                        currentValue={item.sku_or_upc}
+                      />
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap={4} wrap="nowrap">
+                      <Textarea
                         value={item.title ?? ''}
+                        style={{ flex: 1 }}
+                        autosize
+                        minRows={1}
                         onChange={(e) => form.setFieldValue(`receipt.line_items.${index}.title`, e.currentTarget.value || null)}
                         onBlur={(e) => track(item.id, 'title', orig?.title ?? null, e.currentTarget.value || null)}
                       />
@@ -151,7 +192,7 @@ export function ReceiptLineItemsEditor({ original }: ReceiptLineItemsEditorProps
                       />
                     </Group>
                   </Table.Td>
-<Table.Td>
+                  <Table.Td>
                     <Group gap={4} wrap="nowrap">
                       <NumberInput
                         decimalScale={2}
@@ -171,27 +212,7 @@ export function ReceiptLineItemsEditor({ original }: ReceiptLineItemsEditorProps
                       />
                     </Group>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap={4} wrap="nowrap">
-                      <TextInput
-                        value={item.sku_or_upc ?? ''}
-                        onChange={(e) =>
-                          form.setFieldValue(`receipt.line_items.${index}.sku_or_upc`, e.currentTarget.value || null)
-                        }
-                        onBlur={(e) =>
-                          track(item.id, 'sku_or_upc', orig?.sku_or_upc ?? null, e.currentTarget.value || null)
-                        }
-                      />
-                      <FieldSourceIndicator
-                        variant="asterisk"
-                        history={history}
-                        field="sku_or_upc"
-                        lineItemId={item.id}
-                        aiValue={orig?.sku_or_upc ?? null}
-                        currentValue={item.sku_or_upc}
-                      />
-                    </Group>
-                  </Table.Td>
+
                   <Table.Td>
                     <ActionIcon
                       color="red"
