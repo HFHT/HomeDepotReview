@@ -12,7 +12,12 @@
     "jsx": "react-jsx",
     "strict": true,
     "types": ["vite/client"],
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@field/*": ["./routes/field/*"],
+      "@finance/*": ["./routes/finance/*"],
+      "@shared/*": ["./routes/shard/*"]
+    }
   },
   "include": ["src", "vite-env.d.ts"]
 }

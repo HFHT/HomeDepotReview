@@ -8,6 +8,7 @@ import { useNetwork } from '@mantine/hooks';
 
 import { DesktopNavigation, MobileNavigation } from './Navigation';
 import { Header } from './Header';
+import { AppRoute, NavMeta } from '../router/types';
 
 /**
  * Supported placements for the primary (desktop) navigation.
@@ -37,6 +38,13 @@ interface AppLayoutProps {
    * @defaultValue 'left'
    */
   navPosition?: NavPosition;
+
+  /**
+   * Navigation routes from the registry
+   */
+  routes: (AppRoute & {
+    nav: NavMeta;
+  })[];
 
   /**
    * When `true` (the default), the main content area is covered by a
@@ -102,7 +110,7 @@ interface AppLayoutProps {
  * area with a loading overlay when the network is offline. Defaults to `true`.
  * @returns The responsive application shell wrapping the provided content.
  */
-export function AppLayout({ children, navPosition, disableOnNetworkOffline = true }: AppLayoutProps) {
+export function AppLayout({ children, routes, navPosition, disableOnNetworkOffline = true }: AppLayoutProps) {
   const isTop = navPosition === 'top';
   const { online } = useNetwork();
 
@@ -148,7 +156,7 @@ export function AppLayout({ children, navPosition, disableOnNetworkOffline = tru
               borderTop: '1px solid #e9ecef',
             }}
           >
-            <DesktopNavigation orientation="horizontal" />
+            <DesktopNavigation routes={routes} orientation="horizontal" />
           </Group>
         )}
       </AppShell.Header>
@@ -156,7 +164,7 @@ export function AppLayout({ children, navPosition, disableOnNetworkOffline = tru
       {/* LEFT SIDEBAR NAV (left layout only) */}
       {!isTop && (
         <AppShell.Navbar p="md" visibleFrom="sm">
-          <DesktopNavigation />
+          <DesktopNavigation routes={routes}/>
         </AppShell.Navbar>
       )}
 
@@ -183,7 +191,7 @@ export function AppLayout({ children, navPosition, disableOnNetworkOffline = tru
           borderTop: '1px solid #e9ecef'
         }}
       >
-        <MobileNavigation />
+        <MobileNavigation routes={routes}/>
       </AppShell.Footer>
     </AppShell>
   );

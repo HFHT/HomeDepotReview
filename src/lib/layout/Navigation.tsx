@@ -1,6 +1,6 @@
 import { ActionIcon, Group, NavLink, Stack, Text, UnstyledButton } from "@mantine/core";
 import { useLocation, useNavigate } from "react-router-dom";
-import { navRoutes } from "../../routes/registry";
+import { AppRoute, NavMeta } from "../router/types";
 
 /**
  * Orientation options for {@link DesktopNavigation}.
@@ -8,15 +8,21 @@ import { navRoutes } from "../../routes/registry";
 type NavOrientation = 'vertical' | 'horizontal';
 
 interface DesktopNavigationProps {
-  /**
-   * Layout direction of the nav links.
-   *
-   * - `'vertical'` (default): stacked links for a left sidebar.
-   * - `'horizontal'`: inline links for a top navigation bar.
-   *
-   * @defaultValue 'vertical'
-   */
-  orientation?: NavOrientation;
+    /**
+     * Navigation routes from the registry
+     */
+    routes: (AppRoute & {
+        nav: NavMeta;
+    })[];
+    /**
+     * Layout direction of the nav links.
+     *
+     * - `'vertical'` (default): stacked links for a left sidebar.
+     * - `'horizontal'`: inline links for a top navigation bar.
+     *
+     * @defaultValue 'vertical'
+     */
+    orientation?: NavOrientation;
 }
 
 /**
@@ -32,33 +38,45 @@ interface DesktopNavigationProps {
  * // Top bar
  * <DesktopNavigation orientation="horizontal" />
  */
-export function DesktopNavigation({ orientation = 'vertical' }: DesktopNavigationProps) {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
+export function DesktopNavigation({ routes, orientation = 'vertical' }: DesktopNavigationProps) {
+    const { pathname } = useLocation();
+    const navigate = useNavigate();
+    const links = routes.map(({ path: to, nav }) => (
+        <NavLink
+            key={to}
+            label={nav.label}
+            leftSection={<nav.icon size={18} />}
+            active={pathname === to}
+            onClick={() => navigate(`${nav.baseRoute ? `/${nav.baseRoute}/` : ''}${to}`)}
+            // Let horizontal links size to their content instead of full width.
+            style={orientation === 'horizontal' ? { width: 'auto', borderRadius: 'var(--mantine-radius-md)' } : undefined}
+        />
+    ));
 
-  const links = navRoutes.map(({ path: to, nav }) => (
-    <NavLink
-      key={to}
-      label={nav.label}
-      leftSection={<nav.icon size={18} />}
-      active={pathname === to}
-      onClick={() => navigate(to)}
-      // Let horizontal links size to their content instead of full width.
-      style={orientation === 'horizontal' ? { width: 'auto', borderRadius: 'var(--mantine-radius-md)' } : undefined}
-    />
-  ));
+    if (orientation === 'horizontal') {
+        return (
+            <Group gap="xs" wrap="nowrap" h="100%" align="center">
+                {links}
+            </Group>
+        );
+    }
 
-  if (orientation === 'horizontal') {
-    return (
-      <Group gap="xs" wrap="nowrap" h="100%" align="center">
-        {links}
-      </Group>
-    );
-  }
-
-  return <Stack gap="xs">{links}</Stack>;
+    return <Stack gap="xs">{links}</Stack>;
 }
 
+
+/** 
+ * Mobile navigation props
+ */
+interface MobileNavigationProps {
+
+    /**
+     * Navigation routes from the registry
+     */
+    routes: (AppRoute & {
+        nav: NavMeta;
+    })[];
+}
 /**
  * Mobile navigation bar rendered as a horizontal row of icon + label buttons,
  * designed to sit along the bottom of the screen (mobile-first design).
@@ -76,16 +94,16 @@ export function DesktopNavigation({ orientation = 'vertical' }: DesktopNavigatio
  * // Inside a fixed bottom app bar on mobile layouts
  * <MobileNavigation />
  */
-export function MobileNavigation() {
+export function MobileNavigation({routes}:MobileNavigationProps) {
     const { pathname } = useLocation();
     const navigate = useNavigate();
 
     return (
         <Group h="100%" justify="space-around" align="center" gap={0}>
-            {navRoutes.map(({ path: to, nav }) => (
+            {routes.map(({ path: to, nav }) => (
                 <UnstyledButton
                     key={to}
-                    onClick={() => navigate(to)}
+                    onClick={() => navigate(`${nav.baseRoute ? `/${nav.baseRoute}/` : ''}${to}`)}
                     style={{
                         flex: 1,
                         textAlign: 'center',

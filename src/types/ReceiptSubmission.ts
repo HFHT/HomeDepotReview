@@ -127,7 +127,7 @@ export type ReceiptSubmissionHistory = {
  * This object is persisted in a Mongo database 
  */
 export type ReceiptSubmissionRequest = {
-_id: string
+    _id: string
     /** The analyzed receipt data to be submitted */
     receipt: ReceiptAnalysisResponse,
     /** The identifier (e.g., username or user ID) of the user submitting the receipt */

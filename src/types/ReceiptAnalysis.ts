@@ -39,6 +39,10 @@ export type ReceiptAnalysisResponseItems = {
     id: string
     /** SKU or UPC code for the item, or `null` if not shown/readable. */
     sku_or_upc: string | null,
+    /** Model for the item, or `null` if not shown/readable. */
+    model: string | null,
+    /** Invoice style receipts have some line items that are special order, capture the po if they exist */
+    special_order_po?: string | null | undefined,
     /** Product or service name/description. */
     title: string | null,
     /** Unit price of the item. */
@@ -60,8 +64,23 @@ export type ReceiptAnalysisResponse = {
     supplier: string | null,
     /** The receipt or transaction number. */
     receipt_number: string | null
-    /** Date on the receipt, in ISO 8601 format if available. */
+    /** The type of receipt, the AI field extraction prompt differs by the receipt type */
+    receipt_type: 'register' | 'invoice' | 'other'
+    /** The store and store location. */
+    store: string | null,
+    store_location: string | null,
+    /** The email address for the customer, or `null` if not shown */
+    customer_email: string | null,
+    /** The order number, or `null` if not shown */
+    order_number: string | null,
+    /** The PO or Job, or `null` if not shown */
+    po_or_job: string | null,
+    /** The project name, or `null` if not shown */
+    project_name: string | null,
+    /** Date on the receipt, YYYY-MM-DD if available. */
     date: string | null,
+    /** Time on the receipt, 24 hour format HH:MM */
+    time: string | null,
     /** Grand total amount on the receipt. */
     total: number | null,
     /** Total discount applied to the receipt, or `null` if not shown. */
@@ -85,8 +104,8 @@ export type ReceiptAnalysisResponse = {
  * summarizing the batch as a whole.
  */
 export type ReceiptAnalysisImageResults = {
-    /** Analysis result for each image in the request, in order. */
-    imageResults: ReceiptAnalysisImageResult[];
+    /** Analysis result for each image in the request, in order. Applies only to register receipts or scanned image receipts.*/
+    imageResults?: ReceiptAnalysisImageResult[] | undefined;
     /** Overall status derived from all image results in the batch. */
     overallStatus: ImageProcessingStatus;
 }

@@ -1,7 +1,7 @@
 import { ReactNode, TouchEvent, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMediaQuery } from '@mantine/hooks';
-import { navRoutes } from '../../routes/registry';
+import { navRoutes } from '../../routes/finance/registry';
 import classes from './SwipeNavigator.module.css';
 
 /**

@@ -53,7 +53,8 @@ export function getProjects(token: string): Promise<ServiceResult<SelectsValue>>
 
 /** Retrieves a user's receipt submission history. */
 export function getReceipts(
+  body: ReceiptHistoryRequest | null,
   token: string
 ): Promise<ServiceResult<ReceiptHistoryResponse>> {
-  return safeCall(() => getReceiptsApi(token));
+  return safeCall(() => getReceiptsApi(body, token));
 }

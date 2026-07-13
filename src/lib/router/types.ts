@@ -15,6 +15,7 @@ export interface NavMeta {
   label: string;
   icon: Icon;
   order?: number;
+  baseRoute?: string;
 }
 
 /**

@@ -65,8 +65,8 @@ export function getReceiptApi(body: ReceiptHistoryRequest, token: string): Promi
 }
 
 /** GET the receipt submission history for a given user. */
-export function getReceiptsApi(token: string): Promise<ReceiptHistoryResponse> {
-  return request<ReceiptHistoryResponse>('/getReceipts', token, {
+export function getReceiptsApi(body: ReceiptHistoryRequest | null, token: string): Promise<ReceiptHistoryResponse> {
+  return request<ReceiptHistoryResponse>(`/getReceipts${body === null ? '' : `?user=${encodeURIComponent(body.user)}`}`, token, {
     method: 'GET',
   });
 }
