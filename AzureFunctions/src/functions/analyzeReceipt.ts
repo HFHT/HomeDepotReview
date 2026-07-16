@@ -1,20 +1,10 @@
 
-import {
-  app,
-  HttpRequest,
-  HttpResponseInit,
-  InvocationContext,
-} from "@azure/functions";
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicClient } from "../anthropicClient";
 import { ReceiptAnalysisRequestSchema } from "../types";
-import {
-  callClaudeForReceipt,
-  extractTextBlock,
-  parseAndValidateReceiptJson,
-  ClaudeReceiptRequest,
-} from "../lib/receiptAnalysisCore";
+import { callClaudeForReceipt, extractTextBlock, parseAndValidateReceiptJson, ClaudeReceiptRequest, } from "../lib/receiptAnalysisCore";
 import { validateImages, buildImageRequest } from "../lib/imageReceiptStrategy";
 import { validatePdf, buildPdfRequest } from "../lib/pdfReceiptStrategy";
 
@@ -48,19 +38,6 @@ async function analyzeReceipt(
 
   const items = parsedRequest.data;
   const pdfItems = items.filter((i) => i.mediaType === "application/pdf");
-
-  // Moved to Zod.
-  // // Business rule: a multi-page PDF is one receipt. Don't allow mixing a PDF
-  // // with other images/pages in the same request.
-  // if (pdfItems.length > 0 && items.length > 1) {
-  //   return {
-  //     status: 400,
-  //     jsonBody: {
-  //       error:
-  //         "A PDF must be submitted alone (as the only item in the array), not combined with other images or PDFs.",
-  //     },
-  //   };
-  // }
 
   // -----------------------------------------------------------------------
   // 2. Validate + build the Claude request via the appropriate strategy

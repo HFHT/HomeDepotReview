@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import {
   ReceiptAnalysisResponseSchema,
   ReceiptAnalysisResponse,
+  TextReceiptAnalysisResponse,
+  TextReceiptAnalysisResponseSchema,
 } from "../types";
 
 /**
@@ -39,9 +41,13 @@ export function extractJsonPayload(text: string): unknown {
 
 /**
  * Ensures every line item has a well-formed UUID, generating one server-side
- * if the model omitted it or produced something invalid.
+ * if the model omitted it or produced something invalid. Generic so it works
+ * for both the image/PDF response shape and the text-extraction response
+ * shape, since only line_items[].id is touched.
  */
-export function ensureLineItemIds(response: ReceiptAnalysisResponse): void {
+export function ensureLineItemIds<
+  T extends { line_items: { id: string }[] }
+>(response: T): void {
   const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,6 +57,21 @@ export function ensureLineItemIds(response: ReceiptAnalysisResponse): void {
     }
   }
 }
+
+// /**
+//  * Ensures every line item has a well-formed UUID, generating one server-side
+//  * if the model omitted it or produced something invalid.
+//  */
+// export function ensureLineItemIds(response: ReceiptAnalysisResponse): void {
+//   const uuidPattern =
+//     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+//   for (const item of response.line_items) {
+//     if (!item.id || !uuidPattern.test(item.id)) {
+//       item.id = randomUUID();
+//     }
+//   }
+// }
 
 /**
  * Parameters needed to invoke Claude for receipt extraction, regardless of
@@ -101,6 +122,10 @@ export type ReceiptAnalysisOutcome =
   | { ok: true; response: ReceiptAnalysisResponse }
   | { ok: false; status: number; body: Record<string, unknown> };
 
+// export type ReceiptAnalysisOutcome =
+//   | { ok: true; response: ReceiptAnalysisResponse }
+//   | { ok: false; status: number; body: Record<string, unknown> };
+
 /**
  * Shared JSON-extraction + schema-validation + UUID-backfill pipeline used by
  * both the image and PDF paths, since the extraction JSON contract is
@@ -146,6 +171,67 @@ export function parseAndValidateReceiptJson(
           stop_reason: message.stop_reason,
           stop_details: message.stop_details
         }
+      },
+    };
+  }
+
+  const response = parsedResponse.data;
+  ensureLineItemIds(response);
+  return { ok: true, response };
+}
+
+export type TextReceiptAnalysisOutcome =
+  | { ok: true; response: TextReceiptAnalysisResponse }
+  | { ok: false; status: number; body: Record<string, unknown> };
+
+  /**
+ * Same JSON-extraction + schema-validation + UUID-backfill pipeline as
+ * parseAndValidateReceiptJson, but validated against the text-extraction
+ * response shape (no image_results).
+ */
+export function parseAndValidateTextReceiptJson(
+  rawText: string,
+  message: Anthropic.Messages.Message
+): TextReceiptAnalysisOutcome {
+  let parsedJson: unknown;
+  try {
+    parsedJson = extractJsonPayload(rawText);
+  } catch {
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: "Model response was not valid JSON.",
+        usage: {
+          inputTokens: message.usage.input_tokens,
+          outputTokens: message.usage.output_tokens,
+          cacheCreationInputTokens:
+            message.usage.cache_creation_input_tokens ?? 0,
+          cacheReadInputTokens: message.usage.cache_read_input_tokens,
+          stop_reason: message.stop_reason,
+          stop_details: message.stop_details,
+        },
+      },
+    };
+  }
+
+  const parsedResponse = TextReceiptAnalysisResponseSchema.safeParse(parsedJson);
+  if (!parsedResponse.success) {
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: "Model response did not match the expected schema.",
+        details: parsedResponse.error.flatten(),
+        usage: {
+          inputTokens: message.usage.input_tokens,
+          outputTokens: message.usage.output_tokens,
+          cacheCreationInputTokens:
+            message.usage.cache_creation_input_tokens ?? 0,
+          cacheReadInputTokens: message.usage.cache_read_input_tokens,
+          stop_reason: message.stop_reason,
+          stop_details: message.stop_details,
+        },
       },
     };
   }

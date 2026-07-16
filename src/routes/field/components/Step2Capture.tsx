@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { extractText, getDocumentProxy } from 'unpdf'
+
 import { Button, FileButton, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import {
   DndContext,
@@ -17,6 +19,7 @@ import { getImageBlob, blobToBase64 } from '../../../lib/auth/services/imageStor
 import { resizeImageForAnalysis } from '../../../lib/services/resizeImageForAnalysis';
 import { SortableImageCard } from './SortableImageCard';
 import { useReceiptStore } from '../stores/receiptStore';
+import { extractStructuredTextFromFile } from '../../../lib/services/pdfExtraction';
 
 /**
  * Step 2 of the New Receipt flow — capture/upload one or more receipt images,
@@ -41,6 +44,7 @@ export function Step2Capture() {
   } = useReceiptStore();
 
   const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -64,6 +68,34 @@ export function Step2Capture() {
   const handleFilesSelected = async (files: File[] | null) => {
     if (!files || files.length === 0) return;
     await addImageFiles(files);
+  };
+  const handlePDF = async (uploadedFile: File | null) => {
+    setFile(uploadedFile);
+
+    if (!uploadedFile) return;
+
+    setLoading(true);
+
+    try {
+      // Convert File to ArrayBuffer, then to Uint8Array
+      const arrayBuffer = await uploadedFile.arrayBuffer();
+      const structuredText = await extractStructuredTextFromFile(uploadedFile);
+      console.log('Structured (tabular) text extracted:\n', structuredText);
+      
+      // const pdfData = new Uint8Array(arrayBuffer);
+      // // Load the PDF document using unpdf
+      // const pdf = await getDocumentProxy(pdfData);
+
+      // // Extract text from the PDF
+      // const { totalPages, text } = await extractText(pdf, { mergePages: true });
+
+      // console.log('Total Pages:', totalPages);
+      // console.log('Extracted Text:', text);
+    } catch (error) {
+      console.error('Error extracting PDF text:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -165,6 +197,13 @@ export function Step2Capture() {
           {(props) => (
             <Button {...props} leftSection={<IconUpload size={16} />} variant="outline">
               Upload Image(s)
+            </Button>
+          )}
+        </FileButton>
+        <FileButton onChange={handlePDF} accept="application/pdf">
+          {(props) => (
+            <Button {...props} leftSection={<IconUpload size={16} />} variant="outline">
+              Upload pdf
             </Button>
           )}
         </FileButton>

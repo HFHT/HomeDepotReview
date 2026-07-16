@@ -50,3 +50,17 @@ export const CLAUDE_PDF_BETA_HEADERS = (
   .split(",")
   .map((h) => h.trim())
   .filter(Boolean);
+
+
+  /**
+ * Model used for text-based extraction (e.g. tabularized PDF text pulled out
+ * of a receipt server-side before being sent to the model). Haiku is
+ * intentionally cheaper/faster than the vision-capable Sonnet path since
+ * there's no image/document reasoning involved — just structured text.
+ */
+export const CLAUDE_HAIKU_MODEL =
+  process.env.CLAUDE_HAIKU_MODEL ?? "claude-haiku-4-5-20251001";
+
+export const CLAUDE_HAIKU_MAX_TOKENS = Number(
+  process.env.CLAUDE_HAIKU_MAX_TOKENS ?? 8192
+);
