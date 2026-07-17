@@ -2,6 +2,13 @@
 
 Pass tokens and model to the getReceipts api, update the endpoint to accept them.
 
+## Jessica meeting
+-- Phases based on job role, Rich would have access to more than the field, Patti would have access to them all.
+-- settings, create roles of procurement and finance
+-- Field personnel, force them to code the phase, have the application check to see if it matches what the AI produced and then ask them to be sure if it is different.
+-- Phase table - create mapping for what project type it applies to: New Home, ABWK, CHR
+-- Phase table - create mapping between how construction refers to the phase and how finance refers to it. For now make them all finance.
+-- Create an Azure Function keep instance warm hook. Wire up useAzureWarmup.ts
 
 ## Todo
 
